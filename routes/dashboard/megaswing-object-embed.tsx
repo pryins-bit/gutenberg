@@ -4,6 +4,10 @@ import { useMegaSwingObjectContext } from './megaswing-context';
 
 const BLOCK_NAME = 'megaswing/object-embed';
 
+const objectEmbedCss = `
+.ms360-object-embed__picker{display:grid;grid-template-columns:70px 1fr;gap:8px;align-items:center;margin:8px 0 10px;font-size:11px}.ms360-object-embed__picker span{color:var(--ms-muted)}.ms360-object-embed__picker select{width:100%;min-width:0;border:1px solid var(--ms-border);border-radius:8px;background:var(--ms-panel);color:inherit;padding:7px 8px}.ms360-object-embed__hero{width:100%;display:grid;grid-template-columns:42px minmax(0,1fr) 20px;align-items:center;gap:9px;text-align:left;border:1px solid var(--ms-border);border-radius:11px;background:var(--ms-panel);color:inherit;padding:10px;cursor:pointer}.ms360-object-embed__hero:hover{border-color:var(--ms-accent)}.ms360-object-embed__hero>span{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--ms-soft);color:var(--ms-accent);font-weight:700}.ms360-object-embed__hero div{min-width:0}.ms360-object-embed__hero b,.ms360-object-embed__hero small{display:block}.ms360-object-embed__hero small{color:var(--ms-muted);font-size:10px;margin-top:2px}.ms360-object-embed__hero p{margin:5px 0 0;font-size:10px;line-height:1.45;color:var(--ms-muted)}.ms360-object-embed__hero i{font-style:normal;color:var(--ms-muted)}.ms360-object-embed__toggles{display:flex;gap:10px;flex-wrap:wrap;margin:9px 0;font-size:10px;color:var(--ms-muted)}.ms360-object-embed__toggles label{display:flex;gap:4px;align-items:center}.ms360-object-embed__strip{border-top:1px solid var(--ms-border);padding-top:7px;margin-top:7px}.ms360-object-embed__strip>b{display:block;font-size:9px;letter-spacing:.08em;color:var(--ms-muted);margin-bottom:5px}.ms360-object-embed__strip>div{display:flex;gap:4px;flex-wrap:wrap}.ms360-object-embed__strip span{border:1px solid var(--ms-border);border-radius:999px;padding:3px 6px;font-size:9px;background:var(--ms-panel)}
+`;
+
 type ObjectEmbedAttributes = {
 	targetObjectId?: string;
 	showScenes?: boolean;
@@ -30,6 +34,7 @@ function ObjectEmbedEdit( {
 
 	return (
 		<section { ...blockProps }>
+			<style>{ objectEmbedCss }</style>
 			<header className="ms360-card__head">
 				<span className="ms360-card__icon">{ target.glyph }</span>
 				<div><b>Embedded Object</b><small>카드 안에 다른 객체를 직접 삽입</small></div>
