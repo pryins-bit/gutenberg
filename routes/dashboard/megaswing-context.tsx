@@ -1,6 +1,7 @@
 import {
 	createContext,
 	useContext,
+	useEffect,
 	type ReactNode,
 } from '@wordpress/element';
 import {
@@ -18,6 +19,8 @@ const MegaSwingObjectContext = createContext<MegaSwingObjectContextValue>( {
 	openObject: () => undefined,
 } );
 
+let extraBlocksRequested = false;
+
 export function MegaSwingObjectProvider( {
 	children,
 	openObject,
@@ -27,6 +30,12 @@ export function MegaSwingObjectProvider( {
 	openObject: ( objectId: string ) => void;
 	resolver?: MegaSwingObjectResolver;
 } ) {
+	useEffect( () => {
+		if ( extraBlocksRequested ) return;
+		extraBlocksRequested = true;
+		void import( './megaswing-object-embed' );
+	}, [] );
+
 	return (
 		<MegaSwingObjectContext.Provider value={ { resolver, openObject } }>
 			{ children }
