@@ -6,8 +6,8 @@ import {
 	type Block,
 } from '@wordpress/blocks';
 import { useMegaSwingObjectContext } from './megaswing-context';
-import type { MegaSwingObject } from './megaswing-data';
 import { megaSwingResolver } from './megaswing-resolver';
+import type { MegaSwingResolvedObject } from './megaswing-universal';
 
 export type MegaSwingCardKey =
 	| 'profile'
@@ -26,9 +26,7 @@ export type MegaSwingCardKey =
 	| 'locations'
 	| 'symbols';
 
-type MegaSwingBlockAttributes = {
-	objectId?: string;
-};
+type MegaSwingBlockAttributes = { objectId?: string };
 
 type CardDefinition = {
 	key: MegaSwingCardKey;
@@ -56,38 +54,24 @@ export const MEGASWING_CARD_DEFINITIONS: CardDefinition[] = [
 	{ key: 'symbols', title: 'Symbols', description: '사물·이미지·감각 반복', icon: '✦' },
 ];
 
-const definitionByKey = new Map(
-	MEGASWING_CARD_DEFINITIONS.map( ( definition ) => [ definition.key, definition ] )
-);
-
+const definitionByKey = new Map( MEGASWING_CARD_DEFINITIONS.map( ( definition ) => [ definition.key, definition ] ) );
 export const megaSwingBlockName = ( key: MegaSwingCardKey ) => `megaswing/${ key }`;
-
-const percent = ( value: number, max: number ) =>
-	`${ Math.max( 0, Math.min( 100, Math.round( ( value / Math.max( 1, max ) ) * 100 ) ) ) }%`;
+const percent = ( value: number, max: number ) => `${ Math.max( 0, Math.min( 100, Math.round( ( value / Math.max( 1, max ) ) * 100 ) ) ) }%`;
 
 function Empty( { children }: { children: string } ) {
 	return <p className="ms360-card__empty">{ children }</p>;
 }
 
-function SceneCards( { object }: { object: MegaSwingObject } ) {
+function SceneCards( { object }: { object: MegaSwingResolvedObject } ) {
 	const { resolver, openObject } = useMegaSwingObjectContext();
 	if ( object.scenes.length === 0 ) return <Empty>연결된 Scene이 아직 없습니다.</Empty>;
-
 	return (
 		<div className="ms360-card__sceneGrid">
 			{ object.scenes.map( ( scene ) => {
 				const target = resolver.findObject( scene.id ) ?? resolver.findObjectByTitle( scene.title );
 				return (
-					<button
-						type="button"
-						className={ `ms360-card__scene ${ target ? 'is-linked' : '' }` }
-						key={ `${ object.id }-${ scene.id }` }
-						disabled={ ! target }
-						onClick={ () => target && openObject( target.id ) }
-					>
-						<b>{ scene.order }</b>
-						<span>{ scene.title }</span>
-						{ scene.role && <small>{ scene.role }</small> }
+					<button type="button" className={ `ms360-card__scene ${ target ? 'is-linked' : '' }` } key={ `${ object.id }-${ scene.id }` } disabled={ ! target } onClick={ () => target && openObject( target.id ) }>
+						<b>{ scene.order }</b><span>{ scene.title }</span>{ scene.role && <small>{ scene.role }</small> }
 					</button>
 				);
 			} ) }
@@ -95,7 +79,7 @@ function SceneCards( { object }: { object: MegaSwingObject } ) {
 	);
 }
 
-function ThemeBars( { object }: { object: MegaSwingObject } ) {
+function ThemeBars( { object }: { object: MegaSwingResolvedObject } ) {
 	const { resolver, openObject } = useMegaSwingObjectContext();
 	if ( object.themes.length === 0 ) return <Empty>연결된 Theme가 아직 없습니다.</Empty>;
 	return (
@@ -103,16 +87,8 @@ function ThemeBars( { object }: { object: MegaSwingObject } ) {
 			{ object.themes.map( ( theme ) => {
 				const target = resolver.findObjectByTitle( theme.label );
 				return (
-					<button
-						type="button"
-						className={ `ms360-card__bar ${ target ? 'is-linked' : '' }` }
-						key={ `${ object.id }-${ theme.label }` }
-						disabled={ ! target }
-						onClick={ () => target && openObject( target.id ) }
-					>
-						<span>{ theme.label }</span>
-						<i className="ms360-card__track"><i style={ { width: percent( theme.value, theme.max ) } } /></i>
-						<b>{ theme.value }</b>
+					<button type="button" className={ `ms360-card__bar ${ target ? 'is-linked' : '' }` } key={ `${ object.id }-${ theme.label }` } disabled={ ! target } onClick={ () => target && openObject( target.id ) }>
+						<span>{ theme.label }</span><i className="ms360-card__track"><i style={ { width: percent( theme.value, theme.max ) } } /></i><b>{ theme.value }</b>
 					</button>
 				);
 			} ) }
@@ -125,7 +101,7 @@ function ChipList( { items }: { items: string[] } ) {
 	return <div className="ms360-card__chips">{ items.map( ( item ) => <span key={ item } className="ms360-card__chip">{ item }</span> ) }</div>;
 }
 
-function RelationshipCards( { object }: { object: MegaSwingObject } ) {
+function RelationshipCards( { object }: { object: MegaSwingResolvedObject } ) {
 	const { resolver, openObject } = useMegaSwingObjectContext();
 	if ( object.relations.length === 0 ) return <Empty>연결된 Object가 없습니다.</Empty>;
 	return (
@@ -134,48 +110,31 @@ function RelationshipCards( { object }: { object: MegaSwingObject } ) {
 			{ object.relations.map( ( relation ) => {
 				const relationTitle = relation.split( '·' )[ 0 ].trim();
 				const target = resolver.findObjectByTitle( relationTitle );
-				return (
-					<button type="button" className="ms360-card__relation" disabled={ ! target } key={ relation } onClick={ () => target && openObject( target.id ) }>
-						{ relation }
-					</button>
-				);
+				return <button type="button" className="ms360-card__relation" disabled={ ! target } key={ relation } onClick={ () => target && openObject( target.id ) }>{ relation }</button>;
 			} ) }
 		</div>
 	);
 }
 
-function CardBody( { card, object }: { card: MegaSwingCardKey; object: MegaSwingObject } ) {
+function CardBody( { card, object }: { card: MegaSwingCardKey; object: MegaSwingResolvedObject } ) {
 	switch ( card ) {
 		case 'profile':
-			return <div><p className="ms360-card__summary">{ object.summary }</p>{ object.identity.map( ( row ) => <div className="ms360-card__kv" key={ row.label }><span>{ row.label }</span><b>{ row.value }</b></div> ) }</div>;
+			return <div><p className="ms360-card__summary">{ object.summary }</p>{ object.identity.length === 0 ? <div className="ms360-card__kv"><span>종류</span><b>{ object.kind }</b></div> : object.identity.map( ( row ) => <div className="ms360-card__kv" key={ row.label }><span>{ row.label }</span><b>{ row.value }</b></div> ) }</div>;
 		case 'story-arc':
 			return <div className="ms360-card__arc">{ object.scenes.length === 0 ? <Empty>Story Arc를 만들 Scene 연결이 없습니다.</Empty> : object.scenes.map( ( scene, index ) => <div className="ms360-card__arcPiece" key={ `arc-${ object.id }-${ scene.id }` }>{ index > 0 && <span className="ms360-card__arrow">→</span> }<div className="ms360-card__arcNode"><b>{ scene.order }</b><span>{ scene.title }</span>{ scene.role && <small>{ scene.role }</small> }</div></div> ) }</div>;
-		case 'scenes':
-			return <SceneCards object={ object } />;
-		case 'situations':
-			return <ChipList items={ object.situations } />;
-		case 'themes':
-			return <ThemeBars object={ object } />;
-		case 'qa':
-			return object.qa.length === 0 ? <Empty>연결된 Question / Answer가 없습니다.</Empty> : <div>{ object.qa.map( ( item ) => <div className="ms360-card__qa" key={ item.question }><b>{ item.question }</b><p>{ item.answer }</p></div> ) }</div>;
-		case 'knowledge':
-			return object.knowledge.length === 0 ? <Empty>Fact 지식 상태가 아직 없습니다.</Empty> : <div className="ms360-card__chips">{ object.knowledge.map( ( item ) => <span key={ item.label } className={ `ms360-card__chip ${ item.known ? 'is-known' : '' }` }>{ item.known ? '◆' : '◇' } { item.label }</span> ) }</div>;
-		case 'motifs':
-			return object.motifs.length === 0 ? <Empty>연결된 Motif가 아직 없습니다.</Empty> : <div>{ object.motifs.map( ( motif ) => <div className="ms360-card__motif" key={ motif.label }><b>{ motif.label }</b><div className="ms360-card__steps">{ motif.steps.map( ( step ) => <span key={ `${ motif.label }-${ step.label }` } className={ `ms360-card__step ${ step.state === 'on' ? 'is-on' : '' }` }>{ step.label }</span> ) }</div></div> ) }</div>;
-		case 'manuscript':
-			return <div><p className="ms360-card__manuscript">{ object.manuscript }</p><button type="button" className="ms360-card__action">{ object.title } 관련 원고만 이어보기</button></div>;
-		case 'relationships':
-			return <RelationshipCards object={ object } />;
-		case 'timeline':
-			return <div className="ms360-card__timeline">{ object.scenes.length === 0 ? <Empty>시간축에 배치할 Scene이 없습니다.</Empty> : object.scenes.map( ( scene ) => <div className="ms360-card__timeItem" key={ `time-${ object.id }-${ scene.id }` }><b>{ scene.order }</b><i /><span>{ scene.title }</span></div> ) }</div>;
-		case 'voice':
-			return <div className="ms360-card__metrics"><span><b>38자</b><small>평균 문장</small></span><span><b>8%</b><small>질문문</small></span><span><b>31%</b><small>대화 proxy</small></span><span><b>0.63</b><small>어휘 다양도</small></span></div>;
-		case 'revision':
-			return <div className="ms360-card__revision">{ [ '구조', '인물', '주제·복선', '문장', '교정', '제출' ].map( ( pass, index ) => <span className={ index < 2 ? 'is-done' : '' } key={ pass }>{ index < 2 ? '✓' : '○' } { pass }</span> ) }</div>;
-		case 'locations':
-			return <ChipList items={ object.locations } />;
-		case 'symbols':
-			return <ChipList items={ object.symbols } />;
+		case 'scenes': return <SceneCards object={ object } />;
+		case 'situations': return <ChipList items={ object.situations } />;
+		case 'themes': return <ThemeBars object={ object } />;
+		case 'qa': return object.qa.length === 0 ? <Empty>연결된 Question / Answer가 없습니다.</Empty> : <div>{ object.qa.map( ( item ) => <div className="ms360-card__qa" key={ `${ item.question }-${ item.answer }` }><b>{ item.question }</b><p>{ item.answer }</p></div> ) }</div>;
+		case 'knowledge': return object.knowledge.length === 0 ? <Empty>Fact 지식 상태가 아직 없습니다.</Empty> : <div className="ms360-card__chips">{ object.knowledge.map( ( item ) => <span key={ item.label } className={ `ms360-card__chip ${ item.known ? 'is-known' : '' }` }>{ item.known ? '◆' : '◇' } { item.label }</span> ) }</div>;
+		case 'motifs': return object.motifs.length === 0 ? <Empty>연결된 Motif가 아직 없습니다.</Empty> : <div>{ object.motifs.map( ( motif ) => <div className="ms360-card__motif" key={ motif.label }><b>{ motif.label }</b><div className="ms360-card__steps">{ motif.steps.map( ( step ) => <span key={ `${ motif.label }-${ step.label }` } className={ `ms360-card__step ${ step.state === 'on' ? 'is-on' : '' }` }>{ step.label }</span> ) }</div></div> ) }</div>;
+		case 'manuscript': return object.manuscript ? <div><p className="ms360-card__manuscript">{ object.manuscript }</p><button type="button" className="ms360-card__action">{ object.title } 관련 원고만 이어보기</button></div> : <Empty>연결된 원고가 아직 없습니다.</Empty>;
+		case 'relationships': return <RelationshipCards object={ object } />;
+		case 'timeline': return <div className="ms360-card__timeline">{ object.scenes.length === 0 ? <Empty>시간축에 배치할 Scene이 없습니다.</Empty> : object.scenes.map( ( scene ) => <div className="ms360-card__timeItem" key={ `time-${ object.id }-${ scene.id }` }><b>{ scene.order }</b><i /><span>{ scene.title }</span></div> ) }</div>;
+		case 'voice': return <div className="ms360-card__metrics"><span><b>38자</b><small>평균 문장</small></span><span><b>8%</b><small>질문문</small></span><span><b>31%</b><small>대화 proxy</small></span><span><b>0.63</b><small>어휘 다양도</small></span></div>;
+		case 'revision': return <div className="ms360-card__revision">{ [ '구조', '인물', '주제·복선', '문장', '교정', '제출' ].map( ( pass, index ) => <span className={ index < 2 ? 'is-done' : '' } key={ pass }>{ index < 2 ? '✓' : '○' } { pass }</span> ) }</div>;
+		case 'locations': return <ChipList items={ object.locations } />;
+		case 'symbols': return <ChipList items={ object.symbols } />;
 	}
 }
 
@@ -184,16 +143,7 @@ function MegaSwingCardEdit( { attributes, card }: { attributes: MegaSwingBlockAt
 	const object = resolver.resolveObject( attributes.objectId ?? 'yukio' );
 	const definition = definitionByKey.get( card );
 	const blockProps = useBlockProps( { className: `ms360-card ${ definition?.wide ? 'is-wide' : '' }` } );
-	return (
-		<section { ...blockProps }>
-			<header className="ms360-card__head">
-				<span className="ms360-card__icon">{ definition?.icon }</span>
-				<div><b>{ definition?.title }</b><small>{ definition?.description }</small></div>
-				<span className="ms360-card__source">{ object.kind.toUpperCase() }</span>
-			</header>
-			<CardBody card={ card } object={ object } />
-		</section>
-	);
+	return <section { ...blockProps }><header className="ms360-card__head"><span className="ms360-card__icon">{ definition?.icon }</span><div><b>{ definition?.title }</b><small>{ definition?.description }</small></div><span className="ms360-card__source">{ object.kind.toUpperCase() }</span></header><CardBody card={ card } object={ object } /></section>;
 }
 
 export function registerMegaSwingBlocks() {
@@ -214,13 +164,20 @@ export function registerMegaSwingBlocks() {
 	} );
 }
 
-const templatesByKind: Record<MegaSwingObject[ 'kind' ], MegaSwingCardKey[]> = {
-	character: [ 'profile', 'story-arc', 'scenes', 'situations', 'themes', 'qa', 'knowledge', 'motifs', 'manuscript' ],
+const templatesByKind: Record<MegaSwingResolvedObject[ 'kind' ], MegaSwingCardKey[]> = {
+	project: [ 'profile', 'scenes', 'themes', 'qa', 'knowledge', 'motifs', 'relationships', 'timeline', 'locations', 'symbols', 'manuscript' ],
+	character: [ 'profile', 'story-arc', 'scenes', 'situations', 'themes', 'qa', 'knowledge', 'motifs', 'relationships', 'voice', 'manuscript' ],
 	scene: [ 'profile', 'scenes', 'situations', 'themes', 'knowledge', 'qa', 'motifs', 'relationships', 'locations', 'manuscript', 'revision' ],
 	theme: [ 'profile', 'scenes', 'themes', 'qa', 'motifs', 'relationships', 'manuscript' ],
 	motif: [ 'profile', 'story-arc', 'scenes', 'situations', 'themes', 'motifs', 'relationships', 'locations', 'symbols', 'manuscript' ],
 	question: [ 'profile', 'qa', 'themes', 'relationships', 'manuscript' ],
 	fact: [ 'profile', 'scenes', 'knowledge', 'themes', 'motifs', 'relationships', 'manuscript' ],
+	answer: [ 'profile', 'qa', 'relationships', 'themes', 'scenes' ],
+	material: [ 'profile', 'scenes', 'motifs', 'themes', 'relationships', 'locations', 'symbols', 'manuscript' ],
+	location: [ 'profile', 'scenes', 'situations', 'relationships', 'motifs', 'themes', 'manuscript' ],
+	time: [ 'profile', 'timeline', 'scenes', 'situations', 'relationships', 'manuscript' ],
+	situation: [ 'profile', 'scenes', 'relationships', 'themes', 'motifs', 'knowledge', 'manuscript' ],
+	technique: [ 'profile', 'scenes', 'relationships', 'themes', 'manuscript', 'revision' ],
 };
 
 export function createMegaSwingObjectTemplate( objectId: string ): Block[] {
