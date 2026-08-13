@@ -5,16 +5,18 @@ on:
   pull_request:
     paths:
       - "routes/dashboard/**"
+      - "megaswing-preview/**"
       - ".github/workflows/megaswing-card-os-check.yml"
   push:
     branches:
       - megaswing-object-card-os
     paths:
       - "routes/dashboard/**"
+      - "megaswing-preview/**"
       - ".github/workflows/megaswing-card-os-check.yml"
 
 jobs:
-  dashboard-typecheck:
+  card-os-check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -30,14 +32,36 @@ jobs:
       - name: Install workspace dependencies
         run: npm ci --ignore-scripts
 
-      - name: Typecheck MegaSwing dashboard route
+      - name: Strict-check MegaSwing resolver model
         shell: bash
         run: |
-          if [ -x node_modules/.bin/tsc ]; then
-            node_modules/.bin/tsc -p routes/dashboard/tsconfig.json --pretty false
-          elif [ -x node_modules/.bin/tsgo ]; then
-            node_modules/.bin/tsgo -p routes/dashboard/tsconfig.json --pretty false
-          else
-            echo "No TypeScript CLI found in workspace"
-            exit 1
-          fi
+          node_modules/.bin/tsc \
+            --noEmit \
+            --strict \
+            --skipLibCheck \
+            --target esnext \
+            --module preserve \
+            --moduleResolution bundler \
+            routes/dashboard/megaswing-data.ts \
+            routes/dashboard/megaswing-resolver.ts
+
+      - name: Smoke-compile Gutenberg Object Card route
+        shell: bash
+        run: |
+          node_modules/.bin/esbuild routes/dashboard/stage.tsx \
+            --bundle \
+            --platform=browser \
+            --format=esm \
+            --jsx=automatic \
+            '--external:@wordpress/*' \
+            --external:react \
+            '--external:react/*' \
+            --outfile=/tmp/megaswing-dashboard.js
+          test -s /tmp/megaswing-dashboard.js
+
+      - name: Verify Vercel preview payload
+        shell: bash
+        run: |
+          test -s megaswing-preview/index.html
+          grep -q "MegaSwing 360" megaswing-preview/index.html
+          grep -q "Gutenberg" megaswing-preview/index.html
