@@ -31,10 +31,21 @@ const DEFAULT_OBJECTS: MegaSwingResolvedObject[] = [
 ];
 
 export class StaticMegaSwingObjectResolver implements MegaSwingObjectResolver {
-	private readonly objects: MegaSwingResolvedObject[];
+	private objects: MegaSwingResolvedObject[];
 
 	constructor( objects: MegaSwingResolvedObject[] = DEFAULT_OBJECTS ) {
-		this.objects = objects;
+		this.objects = [ ...objects ];
+	}
+
+	replaceObjects( objects: MegaSwingResolvedObject[] ) {
+		if ( objects.length === 0 ) {
+			throw new Error( 'MegaSwing resolver cannot replace the catalog with an empty object list.' );
+		}
+		this.objects = [ ...objects ];
+	}
+
+	resetToSampleCatalog() {
+		this.objects = [ ...DEFAULT_OBJECTS ];
 	}
 
 	listObjects() {
