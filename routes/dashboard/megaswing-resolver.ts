@@ -1,5 +1,9 @@
 import { MEGASWING_EXTRA_OBJECTS } from './megaswing-catalog';
 import { MEGASWING_OBJECTS } from './megaswing-data';
+import {
+	MEGASWING_CANONICAL_ANSWERS,
+	MEGASWING_QUESTIONS,
+} from './megaswing-questions';
 import { MEGASWING_EXTRA_SCENES } from './megaswing-scenes';
 import type { MegaSwingResolvedObject } from './megaswing-universal';
 
@@ -22,6 +26,8 @@ const DEFAULT_OBJECTS: MegaSwingResolvedObject[] = [
 	...MEGASWING_OBJECTS,
 	...MEGASWING_EXTRA_SCENES,
 	...MEGASWING_EXTRA_OBJECTS,
+	...MEGASWING_QUESTIONS,
+	...MEGASWING_CANONICAL_ANSWERS,
 ];
 
 export class StaticMegaSwingObjectResolver implements MegaSwingObjectResolver {
