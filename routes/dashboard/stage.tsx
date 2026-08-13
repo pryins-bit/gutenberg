@@ -5,15 +5,17 @@ import {
 } from '@wordpress/block-editor';
 import type { Block } from '@wordpress/blocks';
 import { Page } from '@wordpress/admin-ui';
+import { useDispatch, useSelect } from '@wordpress/data';
 import { useMemo, useState } from '@wordpress/element';
+import { store as preferencesStore } from '@wordpress/preferences';
 import {
 	MEGASWING_CARD_DEFINITIONS,
 	createMegaSwingCardBlock,
 	createMegaSwingObjectTemplate,
-	registerMegaSwingBlocks,
 	type MegaSwingCardKey,
 } from './megaswing-blocks';
 import { MegaSwingObjectProvider } from './megaswing-context';
+import { registerMegaSwingEnvironment } from './megaswing-register';
 import { megaSwingResolver } from './megaswing-resolver';
 import {
 	megaSwingCanvasStyles,
@@ -26,15 +28,35 @@ import {
 	type MegaSwingVisualView,
 } from './megaswing-views';
 
-registerMegaSwingBlocks();
+registerMegaSwingEnvironment();
 
 type LayoutMode = keyof typeof megaSwingCanvasStyles;
 type ObjectLayouts = Record<string, Block[]>;
 
+const PREFERENCE_SCOPE = 'megaswing360';
+const CARD_KEYS = new Set<MegaSwingCardKey>(
+	MEGASWING_CARD_DEFINITIONS.map( ( definition ) => definition.key )
+);
 const kindOrder = [
 	'project', 'character', 'scene', 'theme', 'question', 'answer', 'fact', 'motif',
 	'material', 'location', 'time', 'situation', 'technique',
 ];
+
+const blockNameToCardKey = ( name: string ): MegaSwingCardKey | undefined => {
+	if ( ! name.startsWith( 'megaswing/' ) ) return;
+	const key = name.slice( 'megaswing/'.length ) as MegaSwingCardKey;
+	return CARD_KEYS.has( key ) ? key : undefined;
+};
+
+const blocksToCardKeys = ( blocks: Block[] ) =>
+	blocks
+		.map( ( block ) => blockNameToCardKey( block.name ) )
+		.filter( ( key ): key is MegaSwingCardKey => Boolean( key ) );
+
+const cardKeysToBlocks = ( objectId: string, keys: MegaSwingCardKey[] ) =>
+	keys
+		.filter( ( key ) => CARD_KEYS.has( key ) )
+		.map( ( key ) => createMegaSwingCardBlock( key, objectId ) );
 
 function ObjectNavigation( {
 	selectedObjectId,
@@ -145,7 +167,7 @@ function ObjectInspector( { objectId, layoutMode, onLayoutMode, activeView }: { 
 			<div className="ms360__inspectBox"><small>Object</small><b>{ object.title }</b></div>
 			<div className="ms360__inspectBox"><small>Kind</small><b>{ object.kind }</b></div>
 			<div className="ms360__inspectBox"><small>Source</small><b>objectId → Resolver</b></div>
-			<p className="ms360__hint">카드는 Scene·Answer·Fact·Theme를 복사하지 않습니다. Gutenberg Block은 objectId만 가지고 Resolver에서 원본을 읽습니다.</p>
+			<p className="ms360__hint">원고·Answer·Fact 내용은 저장하지 않습니다. Preferences에는 이 Object의 카드 종류와 순서만 저장합니다.</p>
 			{ activeView === 'object' && <><div className="ms360__inspectTitle">선택 Block</div><div className="ms360__nativeInspector"><BlockInspector /></div></> }
 		</aside>
 	);
@@ -156,14 +178,27 @@ function Dashboard() {
 	const [ activeView, setActiveView ] = useState<MegaSwingVisualView>( 'object' );
 	const [ layoutMode, setLayoutMode ] = useState<LayoutMode>( 'cards' );
 	const [ paletteOpen, setPaletteOpen ] = useState( false );
-	const [ objectLayouts, setObjectLayouts ] = useState<ObjectLayouts>( () => ( { 'project-rail-hotel': createMegaSwingObjectTemplate( 'project-rail-hotel' ) } ) );
+	const [ objectLayouts, setObjectLayouts ] = useState<ObjectLayouts>( {} );
+	const { set: setPreference } = useDispatch( preferencesStore );
+	const savedLayout = useSelect(
+		( select ) => select( preferencesStore ).get( PREFERENCE_SCOPE, `layout:${ selectedObjectId }` ) as MegaSwingCardKey[] | undefined,
+		[ selectedObjectId ]
+	);
 
 	const selectedObject = megaSwingResolver.resolveObject( selectedObjectId );
-	const blocks = objectLayouts[ selectedObjectId ] ?? createMegaSwingObjectTemplate( selectedObjectId );
-	const updateBlocks = ( nextBlocks: Block[] ) => setObjectLayouts( ( current ) => ( { ...current, [ selectedObjectId ]: nextBlocks } ) );
+	const persistedOrDefaultBlocks = useMemo(
+		() => savedLayout?.length ? cardKeysToBlocks( selectedObjectId, savedLayout ) : createMegaSwingObjectTemplate( selectedObjectId ),
+		[ savedLayout, selectedObjectId ]
+	);
+	const blocks = objectLayouts[ selectedObjectId ] ?? persistedOrDefaultBlocks;
+
+	const updateBlocks = ( nextBlocks: Block[] ) => {
+		setObjectLayouts( ( current ) => ( { ...current, [ selectedObjectId ]: nextBlocks } ) );
+		setPreference( PREFERENCE_SCOPE, `layout:${ selectedObjectId }`, blocksToCardKeys( nextBlocks ) );
+	};
+
 	const openObject = ( objectId: string ) => {
 		if ( ! megaSwingResolver.findObject( objectId ) ) return;
-		setObjectLayouts( ( current ) => current[ objectId ] ? current : { ...current, [ objectId ]: createMegaSwingObjectTemplate( objectId ) } );
 		setSelectedObjectId( objectId );
 		setActiveView( 'object' );
 		setPaletteOpen( false );
