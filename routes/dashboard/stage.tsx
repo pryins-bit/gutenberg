@@ -19,6 +19,12 @@ import {
 	megaSwingCanvasStyles,
 	megaSwingShellCss,
 } from './megaswing-styles';
+import {
+	MegaSwingMatrix,
+	MegaSwingStoryMap,
+	MegaSwingTimeline,
+	type MegaSwingVisualView,
+} from './megaswing-views';
 
 registerMegaSwingBlocks();
 
@@ -32,10 +38,14 @@ const kindOrder = [
 
 function ObjectNavigation( {
 	selectedObjectId,
+	activeView,
 	onSelect,
+	onView,
 }: {
 	selectedObjectId: string;
+	activeView: MegaSwingVisualView;
 	onSelect: ( objectId: string ) => void;
+	onView: ( view: MegaSwingVisualView ) => void;
 } ) {
 	const [ query, setQuery ] = useState( '' );
 	const [ kind, setKind ] = useState( 'all' );
@@ -51,7 +61,9 @@ function ObjectNavigation( {
 		.filter( ( object ) => kind === 'all' || object.kind === kind )
 		.filter( ( object ) => ! normalizedQuery || `${ object.title } ${ object.kind } ${ object.meta }`.toLocaleLowerCase().includes( normalizedQuery ) )
 		.sort( ( a, b ) => {
-			const kindDifference = kindOrder.indexOf( a.kind ) - kindOrder.indexOf( b.kind );
+			const aIndex = kindOrder.indexOf( a.kind );
+			const bIndex = kindOrder.indexOf( b.kind );
+			const kindDifference = ( aIndex < 0 ? 999 : aIndex ) - ( bIndex < 0 ? 999 : bIndex );
 			return kindDifference || a.title.localeCompare( b.title, 'ko' );
 		} );
 
@@ -84,112 +96,82 @@ function ObjectNavigation( {
 					</option>
 				) ) }
 			</select>
+
+			<div className="ms360__navLabel">Visual Views</div>
+			<button type="button" className={ `ms360__nav ${ activeView === 'object' ? 'is-active' : '' }` } onClick={ () => onView( 'object' ) }><span className="ms360__navGlyph">▣</span><span className="ms360__navCopy"><b>Object Cards</b><small>현재 객체 블록</small></span></button>
+			<button type="button" className={ `ms360__nav ${ activeView === 'story-map' ? 'is-active' : '' }` } onClick={ () => onView( 'story-map' ) }><span className="ms360__navGlyph">⌘</span><span className="ms360__navCopy"><b>Story Map</b><small>관계망</small></span></button>
+			<button type="button" className={ `ms360__nav ${ activeView === 'timeline' ? 'is-active' : '' }` } onClick={ () => onView( 'timeline' ) }><span className="ms360__navGlyph">≈</span><span className="ms360__navCopy"><b>Timeline</b><small>12 Scene</small></span></button>
+			<button type="button" className={ `ms360__nav ${ activeView === 'matrix' ? 'is-active' : '' }` } onClick={ () => onView( 'matrix' ) }><span className="ms360__navGlyph">▤</span><span className="ms360__navCopy"><b>Matrix</b><small>10 인물 × 10 주제</small></span></button>
+
 			<div className="ms360__navLabel">{ visibleObjects.length } Objects</div>
 			{ visibleObjects.map( ( object ) => (
 				<button
 					type="button"
 					key={ object.id }
-					className={ `ms360__nav ${ object.id === selectedObjectId ? 'is-active' : '' }` }
+					className={ `ms360__nav ${ activeView === 'object' && object.id === selectedObjectId ? 'is-active' : '' }` }
 					onClick={ () => onSelect( object.id ) }
 				>
 					<span className="ms360__navGlyph">{ object.glyph }</span>
-					<span className="ms360__navCopy">
-						<b>{ object.title }</b>
-						<small>{ object.kind }</small>
-					</span>
+					<span className="ms360__navCopy"><b>{ object.title }</b><small>{ object.kind }</small></span>
 				</button>
 			) ) }
-
-			<div className="ms360__navLabel">Visual Views</div>
-			<button type="button" className="ms360__viewBtn">⌘ Story Map · 관계망</button>
-			<button type="button" className="ms360__viewBtn">≈ Timeline · 사건 시간</button>
-			<button type="button" className="ms360__viewBtn">▤ Matrix · 인물 × 주제</button>
 		</aside>
 	);
 }
 
-function BlockPalette( {
-	blocks,
-	onAdd,
-}: {
-	blocks: Block[];
-	onAdd: ( card: MegaSwingCardKey ) => void;
-} ) {
-	const existingBlockNames = useMemo(
-		() => new Set( blocks.map( ( block ) => block.name ) ),
-		[ blocks ]
-	);
+function BlockPalette( { blocks, onAdd }: { blocks: Block[]; onAdd: ( card: MegaSwingCardKey ) => void } ) {
+	const existingBlockNames = useMemo( () => new Set( blocks.map( ( block ) => block.name ) ), [ blocks ] );
 	return (
 		<div className="ms360__palette">
 			{ MEGASWING_CARD_DEFINITIONS.map( ( definition ) => {
 				const alreadyAdded = existingBlockNames.has( `megaswing/${ definition.key }` );
-				return (
-					<button type="button" key={ definition.key } disabled={ alreadyAdded } onClick={ () => onAdd( definition.key ) }>
-						<b>{ definition.icon } { definition.title }</b>
-						<span>{ alreadyAdded ? '이미 이 Object에 있음' : definition.description }</span>
-					</button>
-				);
+				return <button type="button" key={ definition.key } disabled={ alreadyAdded } onClick={ () => onAdd( definition.key ) }><b>{ definition.icon } { definition.title }</b><span>{ alreadyAdded ? '이미 이 Object에 있음' : definition.description }</span></button>;
 			} ) }
 		</div>
 	);
 }
 
-function ObjectInspector( {
-	objectId,
-	layoutMode,
-	onLayoutMode,
-}: {
-	objectId: string;
-	layoutMode: LayoutMode;
-	onLayoutMode: ( mode: LayoutMode ) => void;
-} ) {
+function ObjectInspector( { objectId, layoutMode, onLayoutMode, activeView }: { objectId: string; layoutMode: LayoutMode; onLayoutMode: ( mode: LayoutMode ) => void; activeView: MegaSwingVisualView } ) {
 	const object = megaSwingResolver.resolveObject( objectId );
 	return (
 		<aside className="ms360__inspector">
+			<div className="ms360__inspectTitle">현재 화면</div>
+			<div className="ms360__inspectBox"><small>View</small><b>{ activeView }</b></div>
 			<div className="ms360__inspectTitle">레이아웃</div>
 			<div className="ms360__modeRow">
-				{ ( Object.keys( megaSwingCanvasStyles ) as LayoutMode[] ).map( ( mode ) => (
-					<button type="button" key={ mode } className={ `ms360__modeBtn ${ layoutMode === mode ? 'is-active' : '' }` } onClick={ () => onLayoutMode( mode ) }>{ mode }</button>
-				) ) }
+				{ ( Object.keys( megaSwingCanvasStyles ) as LayoutMode[] ).map( ( mode ) => <button type="button" key={ mode } disabled={ activeView !== 'object' } className={ `ms360__modeBtn ${ layoutMode === mode ? 'is-active' : '' }` } onClick={ () => onLayoutMode( mode ) }>{ mode }</button> ) }
 			</div>
 			<div className="ms360__inspectTitle">현재 객체</div>
 			<div className="ms360__inspectBox"><small>Object</small><b>{ object.title }</b></div>
 			<div className="ms360__inspectBox"><small>Kind</small><b>{ object.kind }</b></div>
 			<div className="ms360__inspectBox"><small>Source</small><b>objectId → Resolver</b></div>
 			<p className="ms360__hint">카드는 Scene·Answer·Fact·Theme를 복사하지 않습니다. Gutenberg Block은 objectId만 가지고 Resolver에서 원본을 읽습니다.</p>
-			<div className="ms360__inspectTitle">선택 Block</div>
-			<div className="ms360__nativeInspector"><BlockInspector /></div>
+			{ activeView === 'object' && <><div className="ms360__inspectTitle">선택 Block</div><div className="ms360__nativeInspector"><BlockInspector /></div></> }
 		</aside>
 	);
 }
 
 function Dashboard() {
 	const [ selectedObjectId, setSelectedObjectId ] = useState( 'project-rail-hotel' );
+	const [ activeView, setActiveView ] = useState<MegaSwingVisualView>( 'object' );
 	const [ layoutMode, setLayoutMode ] = useState<LayoutMode>( 'cards' );
 	const [ paletteOpen, setPaletteOpen ] = useState( false );
-	const [ objectLayouts, setObjectLayouts ] = useState<ObjectLayouts>( () => ( {
-		'project-rail-hotel': createMegaSwingObjectTemplate( 'project-rail-hotel' ),
-	} ) );
+	const [ objectLayouts, setObjectLayouts ] = useState<ObjectLayouts>( () => ( { 'project-rail-hotel': createMegaSwingObjectTemplate( 'project-rail-hotel' ) } ) );
 
 	const selectedObject = megaSwingResolver.resolveObject( selectedObjectId );
 	const blocks = objectLayouts[ selectedObjectId ] ?? createMegaSwingObjectTemplate( selectedObjectId );
-
-	const updateBlocks = ( nextBlocks: Block[] ) => {
-		setObjectLayouts( ( current ) => ( { ...current, [ selectedObjectId ]: nextBlocks } ) );
-	};
-
+	const updateBlocks = ( nextBlocks: Block[] ) => setObjectLayouts( ( current ) => ( { ...current, [ selectedObjectId ]: nextBlocks } ) );
 	const openObject = ( objectId: string ) => {
 		if ( ! megaSwingResolver.findObject( objectId ) ) return;
 		setObjectLayouts( ( current ) => current[ objectId ] ? current : { ...current, [ objectId ]: createMegaSwingObjectTemplate( objectId ) } );
 		setSelectedObjectId( objectId );
+		setActiveView( 'object' );
 		setPaletteOpen( false );
 	};
-
 	const addBlock = ( card: MegaSwingCardKey ) => {
 		updateBlocks( [ ...blocks, createMegaSwingCardBlock( card, selectedObjectId ) ] );
 		setPaletteOpen( false );
 	};
-
 	const resetLayout = () => updateBlocks( createMegaSwingObjectTemplate( selectedObjectId ) );
 	const canvasStyles = [ ...megaSwingCanvasStyles[ layoutMode ] ];
 
@@ -200,24 +182,26 @@ function Dashboard() {
 				<div className="ms360">
 					<header className="ms360__top">
 						<strong className="ms360__brand">MegaSwing 360</strong>
-						<span className="ms360__crumb">철도 전망 호텔 / { selectedObject.kind } / { selectedObject.title }</span>
+						<span className="ms360__crumb">철도 전망 호텔 / { activeView } / { selectedObject.title }</span>
 						<button type="button" className="ms360__topBtn" onClick={ () => openObject( 'project-rail-hotel' ) }>▣ 프로젝트</button>
-						<button type="button" className="ms360__topBtn" onClick={ resetLayout }>↺ 템플릿</button>
+						{ activeView === 'object' && <button type="button" className="ms360__topBtn" onClick={ resetLayout }>↺ 템플릿</button> }
 						<button type="button" className="ms360__topBtn">↓ 업데이트</button>
 					</header>
 					<div className="ms360__layout">
-						<ObjectNavigation selectedObjectId={ selectedObjectId } onSelect={ openObject } />
+						<ObjectNavigation selectedObjectId={ selectedObjectId } activeView={ activeView } onSelect={ openObject } onView={ setActiveView } />
 						<main className="ms360__main">
 							<section className="ms360__hero">
 								<div className="ms360__avatar">{ selectedObject.glyph }</div>
-								<div><small>LIVE GUTENBERG OBJECT</small><h2>{ selectedObject.title }</h2><div className="ms360__heroMeta">{ selectedObject.meta }</div></div>
-								<span className="ms360__live">{ blocks.length } BLOCKS</span>
+								<div><small>{ activeView === 'object' ? 'LIVE GUTENBERG OBJECT' : 'VISUAL LENS' }</small><h2>{ selectedObject.title }</h2><div className="ms360__heroMeta">{ selectedObject.meta }</div></div>
+								<span className="ms360__live">{ activeView === 'object' ? `${ blocks.length } BLOCKS` : activeView.toUpperCase() }</span>
 							</section>
-							<div className="ms360__canvasWrap"><BlockCanvas height="680px" styles={ canvasStyles } /></div>
-							<button type="button" className="ms360__add" onClick={ () => setPaletteOpen( ( open ) => ! open ) }>＋ Gutenberg Plugin Block 추가</button>
-							{ paletteOpen && <BlockPalette blocks={ blocks } onAdd={ addBlock } /> }
+
+							{ activeView === 'object' && <><div className="ms360__canvasWrap"><BlockCanvas height="680px" styles={ canvasStyles } /></div><button type="button" className="ms360__add" onClick={ () => setPaletteOpen( ( open ) => ! open ) }>＋ Gutenberg Plugin Block 추가</button>{ paletteOpen && <BlockPalette blocks={ blocks } onAdd={ addBlock } /> }</> }
+							{ activeView === 'story-map' && <MegaSwingStoryMap objectId={ selectedObjectId } /> }
+							{ activeView === 'timeline' && <MegaSwingTimeline /> }
+							{ activeView === 'matrix' && <MegaSwingMatrix /> }
 						</main>
-						<ObjectInspector objectId={ selectedObjectId } layoutMode={ layoutMode } onLayoutMode={ setLayoutMode } />
+						<ObjectInspector objectId={ selectedObjectId } layoutMode={ layoutMode } onLayoutMode={ setLayoutMode } activeView={ activeView } />
 					</div>
 				</div>
 			</BlockEditorProvider>
