@@ -44,7 +44,8 @@ jobs:
             --module preserve \
             --moduleResolution bundler \
             routes/dashboard/megaswing-data.ts \
-            routes/dashboard/megaswing-resolver.ts
+            routes/dashboard/megaswing-resolver.ts \
+            routes/dashboard/megaswing-siyuan-adapter.ts
 
       - name: Smoke-compile Gutenberg Object Card route
         shell: bash
