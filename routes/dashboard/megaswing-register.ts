@@ -1,5 +1,6 @@
 import { registerBlockCollection } from '@wordpress/blocks';
 import { registerMegaSwingBlocks } from './megaswing-blocks';
+import { registerMegaSwingObjectEmbedBlock } from './megaswing-object-embed';
 
 let registered = false;
 
@@ -11,5 +12,6 @@ export function registerMegaSwingEnvironment() {
 		icon: 'screenoptions',
 	} );
 	registerMegaSwingBlocks();
+	registerMegaSwingObjectEmbedBlock();
 	registered = true;
 }
