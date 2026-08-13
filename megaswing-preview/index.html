@@ -3,67 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>MegaSwing 360 · Object Card OS</title>
-<link rel="stylesheet" href="./styles.css" />
-<link rel="stylesheet" href="./polish.css" />
+<title>MegaSwing 360 · Full Object Card OS</title>
+<link rel="stylesheet" href="./full-shell.css" />
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div class="brand">MegaSwing 360</div>
-    <div class="crumb" id="crumb">철도 전망 호텔 / Object / 철도 전망 호텔</div>
-    <button class="btn" id="projectBtn">▣ 프로젝트 홈</button>
-    <button class="btn" id="resetBtn">↺ 레이아웃 초기화</button>
-  </header>
-
-  <div class="layout">
-    <aside class="side left">
-      <div class="label">Object Browser</div>
-      <input class="search" id="search" placeholder="객체 검색…" aria-label="객체 검색" />
-      <select class="filter" id="kind" aria-label="객체 종류"></select>
-
-      <div class="label">Views</div>
-      <button class="nav active" data-view="object"><span class="glyph">▣</span><span class="navcopy"><b>Object Cards</b><small>Gutenberg blocks</small></span></button>
-      <button class="nav" data-view="story-map"><span class="glyph">⌘</span><span class="navcopy"><b>Story Map</b><small>관계·복선 지도</small></span></button>
-      <button class="nav" data-view="timeline"><span class="glyph">≈</span><span class="navcopy"><b>Timeline</b><small>장면·사건 시간</small></span></button>
-      <button class="nav" data-view="matrix"><span class="glyph">▤</span><span class="navcopy"><b>Matrix</b><small>인물 × 주제</small></span></button>
-
-      <div class="label" id="objectCount">Objects</div>
-      <div class="objectlist" id="objectlist"></div>
-    </aside>
-
-    <main class="main">
-      <section class="hero">
-        <div class="avatar" id="avatar">▣</div>
-        <div>
-          <small><span class="statusdot"></span>CANONICAL OBJECT</small>
-          <h1 id="title">철도 전망 호텔</h1>
-          <div class="meta" id="meta">Project · MegaSwing 360</div>
-        </div>
-        <span class="badge" id="badge">11 BLOCKS</span>
-      </section>
-
-      <div class="viewbar">
-        <b>Object Workspace</b>
-        <button class="viewbtn active" data-mode="cards">Cards</button>
-        <button class="viewbtn" data-mode="magazine">Wide</button>
-        <button class="viewbtn" data-mode="dense">Dense</button>
-      </div>
-
-      <div id="workspace"></div>
-    </main>
-
-    <aside class="side right">
-      <div class="label">Current Object</div>
-      <div class="ibox"><small>Object</small><b id="inspectObject">철도 전망 호텔</b></div>
-      <div class="ibox"><small>Kind</small><b id="inspectKind">project</b></div>
-      <div class="ibox"><small>Source</small><b>Resolver → canonical object</b></div>
-      <p class="help">레이아웃 상태만 UI에 저장하고 Scene·Answer·Fact·원고 내용은 원본 Object에서 다시 읽습니다.</p>
-      <div class="label">Block Inspector</div>
-      <div class="inspector" id="inspector"><p class="help">카드를 선택하면 속성이 여기에 표시됩니다.</p></div>
-    </aside>
-  </div>
-</div>
-<script src="./app.js"></script>
+<div id="app" class="app"></div>
+<script src="./full-shell.js"></script>
 </body>
 </html>
