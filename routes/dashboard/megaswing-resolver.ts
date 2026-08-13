@@ -1,31 +1,40 @@
-import {
-	MEGASWING_OBJECTS,
-	type MegaSwingObject,
-} from './megaswing-data';
+import { MEGASWING_EXTRA_OBJECTS } from './megaswing-catalog';
+import { MEGASWING_OBJECTS } from './megaswing-data';
+import type { MegaSwingResolvedObject } from './megaswing-universal';
 
 export interface MegaSwingObjectResolver {
-	listObjects(): MegaSwingObject[];
-	findObject( id: string ): MegaSwingObject | undefined;
-	findObjectByTitle( title: string ): MegaSwingObject | undefined;
-	resolveObject( id: string ): MegaSwingObject;
+	listObjects(): MegaSwingResolvedObject[];
+	listObjectsByKind( kind: MegaSwingResolvedObject[ 'kind' ] ): MegaSwingResolvedObject[];
+	findObject( id: string ): MegaSwingResolvedObject | undefined;
+	findObjectByTitle( title: string ): MegaSwingResolvedObject | undefined;
+	resolveObject( id: string ): MegaSwingResolvedObject;
 }
 
 const normalize = ( value: string ) =>
 	value
-		.replace( /^(Theme|Fact|Question|Scene)\s+/i, '' )
+		.replace( /^(Theme|Fact|Question|Scene|Character|Material|Location|Situation|Technique|Answer)\s+/i, '' )
 		.replace( /^\d+\s*[·.]?\s*/, '' )
 		.trim()
 		.toLocaleLowerCase();
 
-export class StaticMegaSwingObjectResolver implements MegaSwingObjectResolver {
-	private readonly objects: MegaSwingObject[];
+const DEFAULT_OBJECTS: MegaSwingResolvedObject[] = [
+	...MEGASWING_OBJECTS,
+	...MEGASWING_EXTRA_OBJECTS,
+];
 
-	constructor( objects: MegaSwingObject[] = MEGASWING_OBJECTS ) {
+export class StaticMegaSwingObjectResolver implements MegaSwingObjectResolver {
+	private readonly objects: MegaSwingResolvedObject[];
+
+	constructor( objects: MegaSwingResolvedObject[] = DEFAULT_OBJECTS ) {
 		this.objects = objects;
 	}
 
 	listObjects() {
 		return this.objects;
+	}
+
+	listObjectsByKind( kind: MegaSwingResolvedObject[ 'kind' ] ) {
+		return this.objects.filter( ( object ) => object.kind === kind );
 	}
 
 	findObject( id: string ) {
