@@ -25,6 +25,11 @@ registerMegaSwingBlocks();
 type LayoutMode = keyof typeof megaSwingCanvasStyles;
 type ObjectLayouts = Record<string, Block[]>;
 
+const kindOrder = [
+	'project', 'character', 'scene', 'theme', 'question', 'answer', 'fact', 'motif',
+	'material', 'location', 'time', 'situation', 'technique',
+];
+
 function ObjectNavigation( {
 	selectedObjectId,
 	onSelect,
@@ -32,10 +37,55 @@ function ObjectNavigation( {
 	selectedObjectId: string;
 	onSelect: ( objectId: string ) => void;
 } ) {
+	const [ query, setQuery ] = useState( '' );
+	const [ kind, setKind ] = useState( 'all' );
+	const allObjects = megaSwingResolver.listObjects();
+	const kinds = useMemo(
+		() => [ ...new Set( allObjects.map( ( object ) => object.kind ) ) ].sort(
+			( a, b ) => kindOrder.indexOf( a ) - kindOrder.indexOf( b )
+		),
+		[ allObjects ]
+	);
+	const normalizedQuery = query.trim().toLocaleLowerCase();
+	const visibleObjects = allObjects
+		.filter( ( object ) => kind === 'all' || object.kind === kind )
+		.filter( ( object ) => ! normalizedQuery || `${ object.title } ${ object.kind } ${ object.meta }`.toLocaleLowerCase().includes( normalizedQuery ) )
+		.sort( ( a, b ) => {
+			const kindDifference = kindOrder.indexOf( a.kind ) - kindOrder.indexOf( b.kind );
+			return kindDifference || a.title.localeCompare( b.title, 'ko' );
+		} );
+
 	return (
 		<aside className="ms360__sidebar">
-			<div className="ms360__navLabel">Objects</div>
-			{ megaSwingResolver.listObjects().map( ( object ) => (
+			<div className="ms360__navLabel">Object Browser</div>
+			<input
+				value={ query }
+				onChange={ ( event ) => setQuery( event.target.value ) }
+				placeholder="객체 검색…"
+				aria-label="객체 검색"
+				style={ {
+					width: '100%', border: '1px solid var(--ms-border)', borderRadius: '8px',
+					background: 'transparent', color: 'inherit', padding: '7px 8px', marginBottom: '6px',
+				} }
+			/>
+			<select
+				value={ kind }
+				onChange={ ( event ) => setKind( event.target.value ) }
+				aria-label="객체 종류"
+				style={ {
+					width: '100%', border: '1px solid var(--ms-border)', borderRadius: '8px',
+					background: 'transparent', color: 'inherit', padding: '7px 8px', marginBottom: '7px',
+				} }
+			>
+				<option value="all">전체 객체 · { allObjects.length }</option>
+				{ kinds.map( ( objectKind ) => (
+					<option key={ objectKind } value={ objectKind }>
+						{ objectKind } · { allObjects.filter( ( object ) => object.kind === objectKind ).length }
+					</option>
+				) ) }
+			</select>
+			<div className="ms360__navLabel">{ visibleObjects.length } Objects</div>
+			{ visibleObjects.map( ( object ) => (
 				<button
 					type="button"
 					key={ object.id }
@@ -69,18 +119,12 @@ function BlockPalette( {
 		() => new Set( blocks.map( ( block ) => block.name ) ),
 		[ blocks ]
 	);
-
 	return (
 		<div className="ms360__palette">
 			{ MEGASWING_CARD_DEFINITIONS.map( ( definition ) => {
 				const alreadyAdded = existingBlockNames.has( `megaswing/${ definition.key }` );
 				return (
-					<button
-						type="button"
-						key={ definition.key }
-						disabled={ alreadyAdded }
-						onClick={ () => onAdd( definition.key ) }
-					>
+					<button type="button" key={ definition.key } disabled={ alreadyAdded } onClick={ () => onAdd( definition.key ) }>
 						<b>{ definition.icon } { definition.title }</b>
 						<span>{ alreadyAdded ? '이미 이 Object에 있음' : definition.description }</span>
 					</button>
@@ -105,25 +149,14 @@ function ObjectInspector( {
 			<div className="ms360__inspectTitle">레이아웃</div>
 			<div className="ms360__modeRow">
 				{ ( Object.keys( megaSwingCanvasStyles ) as LayoutMode[] ).map( ( mode ) => (
-					<button
-						type="button"
-						key={ mode }
-						className={ `ms360__modeBtn ${ layoutMode === mode ? 'is-active' : '' }` }
-						onClick={ () => onLayoutMode( mode ) }
-					>
-						{ mode }
-					</button>
+					<button type="button" key={ mode } className={ `ms360__modeBtn ${ layoutMode === mode ? 'is-active' : '' }` } onClick={ () => onLayoutMode( mode ) }>{ mode }</button>
 				) ) }
 			</div>
-
 			<div className="ms360__inspectTitle">현재 객체</div>
 			<div className="ms360__inspectBox"><small>Object</small><b>{ object.title }</b></div>
 			<div className="ms360__inspectBox"><small>Kind</small><b>{ object.kind }</b></div>
 			<div className="ms360__inspectBox"><small>Source</small><b>objectId → Resolver</b></div>
-			<p className="ms360__hint">
-				카드는 Scene·Answer·Fact·Theme를 복사하지 않습니다. Gutenberg Block은 objectId만 가지고 Resolver에서 원본을 읽습니다.
-			</p>
-
+			<p className="ms360__hint">카드는 Scene·Answer·Fact·Theme를 복사하지 않습니다. Gutenberg Block은 objectId만 가지고 Resolver에서 원본을 읽습니다.</p>
 			<div className="ms360__inspectTitle">선택 Block</div>
 			<div className="ms360__nativeInspector"><BlockInspector /></div>
 		</aside>
@@ -131,29 +164,23 @@ function ObjectInspector( {
 }
 
 function Dashboard() {
-	const [ selectedObjectId, setSelectedObjectId ] = useState( 'yukio' );
+	const [ selectedObjectId, setSelectedObjectId ] = useState( 'project-rail-hotel' );
 	const [ layoutMode, setLayoutMode ] = useState<LayoutMode>( 'cards' );
 	const [ paletteOpen, setPaletteOpen ] = useState( false );
 	const [ objectLayouts, setObjectLayouts ] = useState<ObjectLayouts>( () => ( {
-		yukio: createMegaSwingObjectTemplate( 'yukio' ),
+		'project-rail-hotel': createMegaSwingObjectTemplate( 'project-rail-hotel' ),
 	} ) );
 
 	const selectedObject = megaSwingResolver.resolveObject( selectedObjectId );
 	const blocks = objectLayouts[ selectedObjectId ] ?? createMegaSwingObjectTemplate( selectedObjectId );
 
 	const updateBlocks = ( nextBlocks: Block[] ) => {
-		setObjectLayouts( ( current ) => ( {
-			...current,
-			[ selectedObjectId ]: nextBlocks,
-		} ) );
+		setObjectLayouts( ( current ) => ( { ...current, [ selectedObjectId ]: nextBlocks } ) );
 	};
 
 	const openObject = ( objectId: string ) => {
 		if ( ! megaSwingResolver.findObject( objectId ) ) return;
-		setObjectLayouts( ( current ) => current[ objectId ] ? current : {
-			...current,
-			[ objectId ]: createMegaSwingObjectTemplate( objectId ),
-		} );
+		setObjectLayouts( ( current ) => current[ objectId ] ? current : { ...current, [ objectId ]: createMegaSwingObjectTemplate( objectId ) } );
 		setSelectedObjectId( objectId );
 		setPaletteOpen( false );
 	};
@@ -168,44 +195,28 @@ function Dashboard() {
 
 	return (
 		<MegaSwingObjectProvider openObject={ openObject } resolver={ megaSwingResolver }>
-			<BlockEditorProvider
-				value={ blocks }
-				onInput={ updateBlocks }
-				onChange={ updateBlocks }
-			>
+			<BlockEditorProvider value={ blocks } onInput={ updateBlocks } onChange={ updateBlocks }>
 				<style>{ megaSwingShellCss }</style>
 				<div className="ms360">
 					<header className="ms360__top">
 						<strong className="ms360__brand">MegaSwing 360</strong>
 						<span className="ms360__crumb">철도 전망 호텔 / { selectedObject.kind } / { selectedObject.title }</span>
-						<button type="button" className="ms360__topBtn" onClick={ resetLayout }>↺ 템플릿 복원</button>
+						<button type="button" className="ms360__topBtn" onClick={ () => openObject( 'project-rail-hotel' ) }>▣ 프로젝트</button>
+						<button type="button" className="ms360__topBtn" onClick={ resetLayout }>↺ 템플릿</button>
 						<button type="button" className="ms360__topBtn">↓ 업데이트</button>
 					</header>
-
 					<div className="ms360__layout">
 						<ObjectNavigation selectedObjectId={ selectedObjectId } onSelect={ openObject } />
-
 						<main className="ms360__main">
 							<section className="ms360__hero">
 								<div className="ms360__avatar">{ selectedObject.glyph }</div>
-								<div>
-									<small>LIVE GUTENBERG OBJECT</small>
-									<h2>{ selectedObject.title }</h2>
-									<div className="ms360__heroMeta">{ selectedObject.meta }</div>
-								</div>
+								<div><small>LIVE GUTENBERG OBJECT</small><h2>{ selectedObject.title }</h2><div className="ms360__heroMeta">{ selectedObject.meta }</div></div>
 								<span className="ms360__live">{ blocks.length } BLOCKS</span>
 							</section>
-
-							<div className="ms360__canvasWrap">
-								<BlockCanvas height="680px" styles={ canvasStyles } />
-							</div>
-
-							<button type="button" className="ms360__add" onClick={ () => setPaletteOpen( ( open ) => ! open ) }>
-								＋ Gutenberg Plugin Block 추가
-							</button>
+							<div className="ms360__canvasWrap"><BlockCanvas height="680px" styles={ canvasStyles } /></div>
+							<button type="button" className="ms360__add" onClick={ () => setPaletteOpen( ( open ) => ! open ) }>＋ Gutenberg Plugin Block 추가</button>
 							{ paletteOpen && <BlockPalette blocks={ blocks } onAdd={ addBlock } /> }
 						</main>
-
 						<ObjectInspector objectId={ selectedObjectId } layoutMode={ layoutMode } onLayoutMode={ setLayoutMode } />
 					</div>
 				</div>
@@ -215,11 +226,7 @@ function Dashboard() {
 }
 
 function Stage() {
-	return (
-		<Page title="MegaSwing 360" ariaLabel="MegaSwing 360" hasPadding={ false }>
-			<Dashboard />
-		</Page>
-	);
+	return <Page title="MegaSwing 360" ariaLabel="MegaSwing 360" hasPadding={ false }><Dashboard /></Page>;
 }
 
 export const stage = Stage;
