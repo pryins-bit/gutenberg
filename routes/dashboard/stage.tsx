@@ -34,6 +34,14 @@ type LayoutMode = keyof typeof megaSwingCanvasStyles;
 type ObjectLayouts = Record<string, Block[]>;
 
 const PREFERENCE_SCOPE = 'megaswing360';
+const SIMPLE_CARD_KEYS: MegaSwingCardKey[] = [
+	'profile',
+	'scenes',
+	'themes',
+	'qa',
+	'knowledge',
+	'manuscript',
+];
 const CARD_KEYS = new Set<MegaSwingCardKey>(
 	MEGASWING_CARD_DEFINITIONS.map( ( definition ) => definition.key )
 );
@@ -208,6 +216,7 @@ function Dashboard() {
 		setPaletteOpen( false );
 	};
 	const resetLayout = () => updateBlocks( createMegaSwingObjectTemplate( selectedObjectId ) );
+	const applySimpleLayout = () => updateBlocks( cardKeysToBlocks( selectedObjectId, SIMPLE_CARD_KEYS ) );
 	const canvasStyles = [ ...megaSwingCanvasStyles[ layoutMode ] ];
 
 	return (
@@ -219,7 +228,8 @@ function Dashboard() {
 						<strong className="ms360__brand">MegaSwing 360</strong>
 						<span className="ms360__crumb">철도 전망 호텔 / { activeView } / { selectedObject.title }</span>
 						<button type="button" className="ms360__topBtn" onClick={ () => openObject( 'project-rail-hotel' ) }>▣ 프로젝트</button>
-						{ activeView === 'object' && <button type="button" className="ms360__topBtn" onClick={ resetLayout }>↺ 템플릿</button> }
+						{ activeView === 'object' && <button type="button" className="ms360__topBtn" onClick={ applySimpleLayout }>▤ 간단 6카드</button> }
+						{ activeView === 'object' && <button type="button" className="ms360__topBtn" onClick={ resetLayout }>↺ 전체 템플릿</button> }
 						<button type="button" className="ms360__topBtn">↓ 업데이트</button>
 					</header>
 					<div className="ms360__layout">
