@@ -1,5 +1,6 @@
 import { MEGASWING_EXTRA_OBJECTS } from './megaswing-catalog';
 import { MEGASWING_OBJECTS } from './megaswing-data';
+import { MEGASWING_EXTRA_SCENES } from './megaswing-scenes';
 import type { MegaSwingResolvedObject } from './megaswing-universal';
 
 export interface MegaSwingObjectResolver {
@@ -19,6 +20,7 @@ const normalize = ( value: string ) =>
 
 const DEFAULT_OBJECTS: MegaSwingResolvedObject[] = [
 	...MEGASWING_OBJECTS,
+	...MEGASWING_EXTRA_SCENES,
 	...MEGASWING_EXTRA_OBJECTS,
 ];
 
