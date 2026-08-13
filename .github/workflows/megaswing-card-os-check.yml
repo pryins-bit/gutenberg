@@ -71,14 +71,16 @@ jobs:
             --outfile=/tmp/megaswing-dashboard.js
           test -s /tmp/megaswing-dashboard.js
 
-      - name: Verify Vercel preview payload
+      - name: Verify full editable preview
         shell: bash
         run: |
           test -s megaswing-preview/index.html
-          test -s megaswing-preview/styles.css
-          test -s megaswing-preview/app.js
-          node --check megaswing-preview/app.js
-          grep -q "MegaSwing 360" megaswing-preview/index.html
-          grep -q "Story Map" megaswing-preview/index.html
-          grep -q "Matrix" megaswing-preview/index.html
-          grep -q "10 Characters" megaswing-preview/app.js
+          test -s megaswing-preview/full-shell.css
+          test -s megaswing-preview/full-shell.js
+          node --check megaswing-preview/full-shell.js
+          grep -q "Full Object Card OS" megaswing-preview/index.html
+          grep -q "Story Map" megaswing-preview/full-shell.js
+          grep -q "Timeline" megaswing-preview/full-shell.js
+          grep -q "Matrix" megaswing-preview/full-shell.js
+          grep -q "contenteditable" megaswing-preview/full-shell.js
+          grep -q "자동저장" megaswing-preview/full-shell.js
