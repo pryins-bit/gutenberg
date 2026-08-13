@@ -36,6 +36,7 @@ jobs:
         shell: bash
         run: |
           node_modules/.bin/tsc \
+            --ignoreConfig \
             --noEmit \
             --strict \
             --skipLibCheck \
