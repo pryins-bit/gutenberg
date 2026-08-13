@@ -48,7 +48,14 @@ jobs:
             routes/dashboard/megaswing-siyuan-adapter.ts
 
       - name: Test SiYuan Kernel adapter
-        run: node --import tsx --test routes/dashboard/megaswing-siyuan-adapter.test.ts
+        shell: bash
+        run: |
+          node_modules/.bin/esbuild routes/dashboard/megaswing-siyuan-adapter.test.ts \
+            --bundle \
+            --platform=node \
+            --format=esm \
+            --outfile=/tmp/megaswing-siyuan-adapter.test.mjs
+          node --test /tmp/megaswing-siyuan-adapter.test.mjs
 
       - name: Smoke-compile Gutenberg Object Card route
         shell: bash
